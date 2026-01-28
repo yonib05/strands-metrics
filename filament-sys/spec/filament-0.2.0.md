@@ -1,7 +1,9 @@
 # Filament Specification 0.2.0
 
 **Status:** Release Candidate
+
 **Date:** 2026-01-26
+
 **Distribution:** Public
 
 **Table of Contents**
