@@ -1,6 +1,6 @@
-# Strands Personal Monorepo
+# Strands Metrics
 
-Personal monorepo for Strands projects. To later be moved into the strands-labs org.
+Monorepo for Strands GitHub metrics collection and Grafana dashboards.
 
 ## Repository Structure
 
@@ -11,13 +11,22 @@ Rust CLI tool for syncing GitHub organization data and package download stats to
 ### strands-grafana/
 
 Grafana configuration with SQLite datasource for visualizing GitHub metrics. Includes:
-- **Health Dashboard** - DORA-style metrics with goal lines for tracking targets
-- **Team Dashboard** - Team performance scorecard and review balance
-- **Triage Dashboard** - Operational views for daily/weekly triage
-- **Adoption Section** - Package download trends from PyPI and npm
 
-Configuration files:
-- `goals.yaml` - Configurable goal thresholds for dashboard alerts
+**General Dashboards:**
+- **Health Dashboard** - DORA-style metrics with dynamic goal lines for tracking targets
+- **Executive Dashboard** - High-level org metrics, cycle time trends, stale PR tracking
+
+**Operations Dashboards:**
+- **Team Dashboard** - Team performance scorecard, review balance, category leaders
+- **Triage Dashboard** - Operational views for daily/weekly triage (open PRs, issues, stale items)
+
+**SDK Dashboards:**
+- **Python SDK** - Metrics specific to sdk-python repository
+- **TypeScript SDK** - Metrics specific to sdk-typescript repository
+- **Evals** - Metrics specific to evals repository
+
+**Configuration files:**
+- `goals.yaml` - Configurable goal thresholds for dashboard alerts and goal lines
 - `packages.yaml` - Package-to-repo mappings for download tracking
 
 ### strands-rs/
@@ -32,7 +41,7 @@ Rust FFI bindings for the Filament specification. Filament is a specification fo
 
 SQLite database tracked via Git LFS. Contains synced GitHub metrics, package downloads, and pre-computed daily aggregates.
 
-## Prerequisites for Grafana
+## Prerequisites
 
 ### Git LFS
 
@@ -52,28 +61,36 @@ git lfs pull
 
 Verify with `git lfs ls-files` - should show metrics.db.
 
-### Other
+### Other Requirements
 
-- Docker and Docker Compose (Or `podman` which I prefer)
+- Docker and Docker Compose (or Podman)
+- Rust toolchain (for building strands-metrics)
+- GitHub Personal Access Token (for syncing data)
 
 ## Quick Start
 
 ```bash
 # Clone and setup Git LFS
 git clone <repo-url>
-cd strands-personal-mono
+cd strands
 git lfs install
 git lfs pull
 
 # Launch Grafana
 cd strands-grafana
-docker-compose up # or podman compose up
+docker-compose up  # or: podman compose up
+
 # Navigate to http://localhost:3000
 ```
 
 ## CLI Commands
 
-The `strands-metrics` CLI provides several commands for managing metrics data:
+The `strands-metrics` CLI provides commands for managing metrics data. Run from the repository root:
+
+```bash
+cd strands-metrics
+cargo run --release -- <command>
+```
 
 ### GitHub Data Sync
 
@@ -111,45 +128,169 @@ Note: Data has ~24h delay due to upstream API update schedules.
 # Load goals from config into database
 cargo run --release -- load-goals
 
+# Load from custom path
+cargo run --release -- load-goals path/to/goals.yaml
+
 # List all configured goals
 cargo run --release -- list-goals
 ```
 
-Goals appear as threshold lines on dashboard charts. Edit `strands-grafana/goals.yaml` to adjust targets.
+Goals control both threshold colors (green/yellow/red) and goal lines on dashboard charts. See [Adding New Goals](#adding-new-goals) for details.
+
+### Team Management
+
+The Team Dashboard uses a `team_members` table to track specific team members for performance metrics.
+
+```bash
+# Load team members (comma-separated GitHub usernames)
+cargo run --release -- load-team --members=alice,bob,charlie
+
+# Example with actual team
+cargo run --release -- load-team --members=afarntrog,lizradway,JackYPCOnline,chaynabors,dbschmigelski,zastrowm,mehtarac,mkmeral,Unshure,pgrayy,poshinchen
+```
+
+**Note:** This is different from how other dashboards determine internal vs external contributors:
+- **Team Dashboard** - Uses `team_members` table (manual, specific people you want to track)
+- **Other Dashboards** - Uses GitHub's `author_association` field (automatic, all org members/collaborators)
 
 ### Raw SQL Queries
 
 ```bash
 # Run arbitrary SQL against the database
 cargo run --release -- query "SELECT * FROM daily_metrics LIMIT 5"
+
+# Check goal thresholds
+cargo run --release -- query "SELECT * FROM goal_thresholds"
+
+# Check team members
+cargo run --release -- query "SELECT * FROM team_members"
 ```
 
 ## Configuration Files
 
 ### strands-grafana/goals.yaml
 
-Defines goal thresholds for rate/time-based metrics. Each goal can include an optional label for dashboard display:
+Defines goal thresholds for metrics. Goals appear as horizontal lines on time series charts and control stat panel colors.
+
+#### Configuration Reference
+
+Each goal requires:
+- `value` - The target threshold value
+- `label` - Display label for the goal line (shown in Grafana legend)
+- `direction` - How to interpret values relative to the goal:
+  - `lower_is_better` - Green below goal, red above (e.g., merge time, failure rate)
+  - `higher_is_better` - Green above goal, red below (e.g., community %, retention)
+- `warning_ratio` (optional) - Multiplier for warning threshold
+  - Default: 0.75 for `lower_is_better`, 0.70 for `higher_is_better`
+  - Must be between 0 and 1 (exclusive)
+
+#### Example Configuration
 
 ```yaml
 goals:
-  # Simple format (value only)
-  avg_merge_time_hours: 24
+  # Time metrics (lower is better)
+  avg_merge_time_hours:
+    value: 24
+    label: "Goal (24h)"
+    direction: lower_is_better
+    # warning at 18h (default 0.75 ratio)
 
-  # Extended format with custom label
-  cycle_time_hours:
-    value: 336
-    label: "Goal (14d)"
-
-  time_to_first_review_hours:
-    value: 72
-    label: "Goal (72h)"
-
-  ci_failure_rate_percent:
-    value: 30
-    label: "Goal (30%)"
+  # Community metrics (higher is better)
+  community_pr_percent_min:
+    value: 20
+    label: "Goal (20%)"
+    direction: higher_is_better
+    warning_ratio: 0.70  # warning at 14%
 ```
 
-After updating goals, run `load-goals` to sync to the database. The `update_dashboard_goals.py` script can update dashboard panel labels to match.
+### Adding New Goals
+
+To add a new goal that appears on dashboards:
+
+#### Step 1: Add the goal to goals.yaml
+
+```yaml
+goals:
+  # ... existing goals ...
+
+  my_new_metric:
+    value: 50
+    label: "Goal (50)"
+    direction: lower_is_better  # or higher_is_better
+    warning_ratio: 0.80         # optional, defaults based on direction
+```
+
+#### Step 2: Load the goal into the database
+
+```bash
+cd strands-metrics
+cargo run --release -- load-goals
+```
+
+#### Step 3: Add the goal query to the dashboard
+
+In the relevant dashboard JSON file, add a query to the panel's `targets` array:
+
+**For time series panels (goal line):**
+```json
+{
+  "queryText": "SELECT $__from / 1000 as time, label as metric, value FROM goals WHERE metric = 'my_new_metric'",
+  "queryType": "time series",
+  "refId": "Goal",
+  "hide": false
+}
+```
+
+**For stat panels (dynamic thresholds):**
+
+1. Add a hidden threshold query:
+```json
+{
+  "queryText": "SELECT warning_value as \"Warning\", goal_value as \"Critical\" FROM goal_thresholds WHERE metric = 'my_new_metric'",
+  "queryType": "table",
+  "refId": "Thresholds",
+  "hide": true
+}
+```
+
+2. Add the `configFromData` transformation to the panel:
+```json
+"transformations": [
+  {
+    "id": "configFromData",
+    "options": {
+      "configRefId": "Thresholds",
+      "mappings": [
+        {"fieldName": "Warning", "handlerKey": "threshold1", "reducerId": "lastNotNull"},
+        {"fieldName": "Critical", "handlerKey": "threshold2", "reducerId": "lastNotNull"}
+      ]
+    }
+  }
+]
+```
+
+#### Step 4: Verify in Grafana
+
+Refresh Grafana (or restart if needed) and check that:
+- The goal line appears on the chart
+- The label matches what you specified
+- Threshold colors work correctly (if using stat panels)
+
+#### Available Metrics
+
+The following metrics are pre-configured in goals.yaml:
+
+| Metric | Description | Direction |
+|--------|-------------|-----------|
+| `avg_merge_time_hours` | Average time from PR open to merge | lower_is_better |
+| `cycle_time_hours` | Time from first commit to merge | lower_is_better |
+| `time_to_first_review_hours` | Time until first review on PR | lower_is_better |
+| `time_to_first_response_hours` | Time until first comment/review | lower_is_better |
+| `ci_failure_rate_percent` | Percentage of PRs with failed CI | lower_is_better |
+| `pr_acceptance_rate_min` | Percentage of PRs merged vs closed | higher_is_better |
+| `community_pr_percent_min` | Percentage of merged PRs from community | higher_is_better |
+| `contributor_retention_min` | Percentage of returning contributors | higher_is_better |
+| `stale_prs_max` | Maximum acceptable stale PRs | lower_is_better |
 
 ### strands-grafana/packages.yaml
 
@@ -164,6 +305,22 @@ repo_mappings:
     - package: "@strands-agents/sdk"
       registry: npm
 ```
+
+## Database Schema
+
+Key tables in `metrics.db`:
+
+| Table | Description |
+|-------|-------------|
+| `pull_requests` | All PRs with full JSON data |
+| `issues` | All issues with full JSON data |
+| `pr_reviews` | PR review events |
+| `commits` | Commit metadata |
+| `daily_metrics` | Pre-computed daily aggregates per repo |
+| `goals` | Goal thresholds from goals.yaml |
+| `goal_thresholds` | SQL view with calculated warning values |
+| `team_members` | Team members for Team Dashboard |
+| `package_downloads` | Daily download counts from PyPI/npm |
 
 ## GitHub Action (Automated Updates)
 
@@ -189,6 +346,37 @@ Run manually via GitHub Actions UI or CLI:
 ```bash
 gh workflow run metrics.yaml
 ```
+
+## Troubleshooting
+
+### Goals not appearing on dashboards
+
+1. Verify the goal is in the database:
+   ```bash
+   cargo run --release -- query "SELECT * FROM goals WHERE metric = 'my_metric'"
+   ```
+
+2. Check the goal_thresholds view:
+   ```bash
+   cargo run --release -- query "SELECT * FROM goal_thresholds WHERE metric = 'my_metric'"
+   ```
+
+3. Ensure `direction` is set (goals without direction don't appear in the view)
+
+### Team Dashboard shows no data
+
+Load team members first:
+```bash
+cargo run --release -- load-team --members=user1,user2,user3
+```
+
+### Invalid goals.yaml
+
+The CLI validates:
+- `direction` must be `lower_is_better` or `higher_is_better`
+- `warning_ratio` must be between 0 and 1 (exclusive)
+
+Errors will be shown when running `load-goals`.
 
 ## License
 

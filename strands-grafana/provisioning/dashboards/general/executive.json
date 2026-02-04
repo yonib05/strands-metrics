@@ -118,11 +118,11 @@
               },
               {
                 "color": "yellow",
-                "value": 18
+                "value": 18.0
               },
               {
                 "color": "red",
-                "value": 24
+                "value": 24.0
               }
             ]
           },
@@ -164,9 +164,40 @@
             "time",
             "ts"
           ]
+        },
+        {
+          "hide": true,
+          "queryText": "SELECT warning_value as \"Warning\", goal_value as \"Critical\" FROM goal_thresholds WHERE metric = 'time_to_first_response_hours'",
+          "queryType": "table",
+          "rawQueryText": "SELECT warning_value as \"Warning\", goal_value as \"Critical\" FROM goal_thresholds WHERE metric = 'time_to_first_response_hours'",
+          "refId": "Thresholds",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
         }
       ],
       "title": "Time to First Response (7d)",
+      "transformations": [
+        {
+          "id": "configFromData",
+          "options": {
+            "configRefId": "Thresholds",
+            "mappings": [
+              {
+                "fieldName": "Warning",
+                "handlerKey": "threshold1",
+                "reducerId": "lastNotNull"
+              },
+              {
+                "fieldName": "Critical",
+                "handlerKey": "threshold2",
+                "reducerId": "lastNotNull"
+              }
+            ]
+          }
+        }
+      ],
       "type": "stat"
     },
     {
@@ -190,11 +221,11 @@
               },
               {
                 "color": "yellow",
-                "value": 10
+                "value": 14.0
               },
               {
                 "color": "green",
-                "value": 15
+                "value": 20.0
               }
             ]
           },
@@ -236,9 +267,40 @@
             "time",
             "ts"
           ]
+        },
+        {
+          "hide": true,
+          "queryText": "SELECT warning_value as \"Warning\", goal_value as \"Critical\" FROM goal_thresholds WHERE metric = 'community_pr_percent_min'",
+          "queryType": "table",
+          "rawQueryText": "SELECT warning_value as \"Warning\", goal_value as \"Critical\" FROM goal_thresholds WHERE metric = 'community_pr_percent_min'",
+          "refId": "Thresholds",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
         }
       ],
       "title": "Community PR % (30d)",
+      "transformations": [
+        {
+          "id": "configFromData",
+          "options": {
+            "configRefId": "Thresholds",
+            "mappings": [
+              {
+                "fieldName": "Warning",
+                "handlerKey": "threshold1",
+                "reducerId": "lastNotNull"
+              },
+              {
+                "fieldName": "Critical",
+                "handlerKey": "threshold2",
+                "reducerId": "lastNotNull"
+              }
+            ]
+          }
+        }
+      ],
       "type": "stat"
     },
     {
@@ -656,8 +718,12 @@
                 "value": null
               },
               {
+                "color": "yellow",
+                "value": 252.0
+              },
+              {
                 "color": "red",
-                "value": 336
+                "value": 336.0
               }
             ]
           },
@@ -733,9 +799,9 @@
           ]
         },
         {
-          "queryText": "SELECT \n  CAST(strftime('%s', date) as INTEGER) as time,\n  (SELECT value FROM goals WHERE metric = 'cycle_time_hours') as \"Goal (14d)\"\nFROM (\n  SELECT DISTINCT date(merged_at) as date\n  FROM pull_requests\n  WHERE merged_at IS NOT NULL AND date(merged_at) >= date('now', '-90 days')\n)\nORDER BY date",
+          "queryText": "SELECT \n  CAST(strftime('%s', date) as INTEGER) as time,\n  (SELECT label FROM goals WHERE metric = 'cycle_time_hours') as metric,\n  (SELECT value FROM goals WHERE metric = 'cycle_time_hours') as value\nFROM (\n  SELECT DISTINCT date(merged_at) as date\n  FROM pull_requests\n  WHERE merged_at IS NOT NULL AND date(merged_at) >= date('now', '-90 days')\n)\nORDER BY date",
           "queryType": "time series",
-          "rawQueryText": "SELECT \n  CAST(strftime('%s', date) as INTEGER) as time,\n  (SELECT value FROM goals WHERE metric = 'cycle_time_hours') as \"Goal (14d)\"\nFROM (\n  SELECT DISTINCT date(merged_at) as date\n  FROM pull_requests\n  WHERE merged_at IS NOT NULL AND date(merged_at) >= date('now', '-90 days')\n)\nORDER BY date",
+          "rawQueryText": "SELECT \n  CAST(strftime('%s', date) as INTEGER) as time,\n  (SELECT label FROM goals WHERE metric = 'cycle_time_hours') as metric,\n  (SELECT value FROM goals WHERE metric = 'cycle_time_hours') as value\nFROM (\n  SELECT DISTINCT date(merged_at) as date\n  FROM pull_requests\n  WHERE merged_at IS NOT NULL AND date(merged_at) >= date('now', '-90 days')\n)\nORDER BY date",
           "refId": "Goal",
           "timeColumns": [
             "time",
@@ -968,11 +1034,11 @@
               },
               {
                 "color": "yellow",
-                "value": 5
+                "value": 4.95
               },
               {
                 "color": "red",
-                "value": 15
+                "value": 15.0
               }
             ]
           }
@@ -1039,11 +1105,11 @@
               },
               {
                 "color": "yellow",
-                "value": 19.2
+                "value": 18.0
               },
               {
                 "color": "red",
-                "value": 24
+                "value": 24.0
               }
             ]
           },
@@ -1085,9 +1151,40 @@
             "time",
             "ts"
           ]
+        },
+        {
+          "hide": true,
+          "queryText": "SELECT warning_value as \"Warning\", goal_value as \"Critical\" FROM goal_thresholds WHERE metric = 'avg_merge_time_hours'",
+          "queryType": "table",
+          "rawQueryText": "SELECT warning_value as \"Warning\", goal_value as \"Critical\" FROM goal_thresholds WHERE metric = 'avg_merge_time_hours'",
+          "refId": "Thresholds",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
         }
       ],
       "title": "Avg Merge Time",
+      "transformations": [
+        {
+          "id": "configFromData",
+          "options": {
+            "configRefId": "Thresholds",
+            "mappings": [
+              {
+                "fieldName": "Warning",
+                "handlerKey": "threshold1",
+                "reducerId": "lastNotNull"
+              },
+              {
+                "fieldName": "Critical",
+                "handlerKey": "threshold2",
+                "reducerId": "lastNotNull"
+              }
+            ]
+          }
+        }
+      ],
       "type": "stat"
     },
     {

@@ -26,6 +26,7 @@
         "type": "frser-sqlite-datasource",
         "uid": "P2289B60D79A89B0C"
       },
+      "description": "Current open PRs. Point-in-time snapshot - not affected by date range. ",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -184,9 +185,9 @@
             "type": "frser-sqlite-datasource",
             "uid": "P2289B60D79A89B0C"
           },
-          "queryText": "SELECT \n  p.repo as \"Repo\", \n  p.author as \"Author\", \n  p.title as \"Title\", \n  json_extract(p.data, '$.html_url') as \"URL\",\n  COALESCE(\n    (SELECT GROUP_CONCAT(json_extract(value, '$.name'), ', ') \n     FROM json_each(json_extract(p.data, '$.labels'))), \n    ''\n  ) as \"Labels\",\n  CASE \n    WHEN r.state = 'APPROVED' THEN '\u2705 Approved' \n    WHEN r.state = 'CHANGES_REQUESTED' THEN '\ud83d\udd04 Changes Requested' \n    ELSE '\ud83d\udc40 Needs Review' \n  END as \"Status\", \n  CAST((julianday('now') - julianday(p.created_at)) as INTEGER) as \"Days Open\",\n  CAST((julianday('now') - julianday(p.updated_at)) as INTEGER) as \"Days Since Activity\"\nFROM pull_requests p \nLEFT JOIN (\n    SELECT repo, pr_number, state FROM pr_reviews r1 \n    WHERE submitted_at = (SELECT MAX(submitted_at) FROM pr_reviews r2 WHERE r2.pr_number = r1.pr_number AND r2.repo = r1.repo)\n) r ON p.repo = r.repo AND p.number = r.pr_number \nWHERE p.state = 'open' \n  AND json_extract(p.data, '$.author_association') IN ('OWNER', 'MEMBER', 'COLLABORATOR') \n  AND p.repo IN ('agent-builder','agent-sop','docs','evals','mcp-server','private-docs-staging','private-sdk-python-staging','private-sdk-typescript-staging','private-tools-staging','samples','sdk-python','sdk-typescript','strands-action','strandsagents.com','tools','.github','private-samples-staging','private-strands-action-staging')\nORDER BY \"Days Open\" DESC",
+          "queryText": "SELECT \n  p.repo as \"Repo\", \n  p.author as \"Author\", \n  p.title as \"Title\", \n  json_extract(p.data, '$.html_url') as \"URL\",\n  COALESCE(\n    (SELECT GROUP_CONCAT(json_extract(value, '$.name'), ', ') \n     FROM json_each(json_extract(p.data, '$.labels'))), \n    ''\n  ) as \"Labels\",\n  CASE \n    WHEN r.state = 'APPROVED' THEN '✅ Approved' \n    WHEN r.state = 'CHANGES_REQUESTED' THEN '🔄 Changes Requested' \n    ELSE '👀 Needs Review' \n  END as \"Status\", \n  CAST((julianday('now') - julianday(p.created_at)) as INTEGER) as \"Days Open\",\n  CAST((julianday('now') - julianday(p.updated_at)) as INTEGER) as \"Days Since Activity\"\nFROM pull_requests p \nLEFT JOIN (\n    SELECT repo, pr_number, state FROM pr_reviews r1 \n    WHERE submitted_at = (SELECT MAX(submitted_at) FROM pr_reviews r2 WHERE r2.pr_number = r1.pr_number AND r2.repo = r1.repo)\n) r ON p.repo = r.repo AND p.number = r.pr_number \nWHERE p.state = 'open' \n  AND json_extract(p.data, '$.author_association') IN ('OWNER', 'MEMBER', 'COLLABORATOR') \n  AND p.repo IN ('agent-builder','agent-sop','docs','evals','mcp-server','private-docs-staging','private-sdk-python-staging','private-sdk-typescript-staging','private-tools-staging','samples','sdk-python','sdk-typescript','strands-action','strandsagents.com','tools','.github','private-samples-staging','private-strands-action-staging')\nORDER BY \"Days Open\" DESC",
           "queryType": "table",
-          "rawQueryText": "SELECT \n  p.repo as \"Repo\", \n  p.author as \"Author\", \n  p.title as \"Title\", \n  json_extract(p.data, '$.html_url') as \"URL\",\n  COALESCE(\n    (SELECT GROUP_CONCAT(json_extract(value, '$.name'), ', ') \n     FROM json_each(json_extract(p.data, '$.labels'))), \n    ''\n  ) as \"Labels\",\n  CASE \n    WHEN r.state = 'APPROVED' THEN '\u2705 Approved' \n    WHEN r.state = 'CHANGES_REQUESTED' THEN '\ud83d\udd04 Changes Requested' \n    ELSE '\ud83d\udc40 Needs Review' \n  END as \"Status\", \n  CAST((julianday('now') - julianday(p.created_at)) as INTEGER) as \"Days Open\",\n  CAST((julianday('now') - julianday(p.updated_at)) as INTEGER) as \"Days Since Activity\"\nFROM pull_requests p \nLEFT JOIN (\n    SELECT repo, pr_number, state FROM pr_reviews r1 \n    WHERE submitted_at = (SELECT MAX(submitted_at) FROM pr_reviews r2 WHERE r2.pr_number = r1.pr_number AND r2.repo = r1.repo)\n) r ON p.repo = r.repo AND p.number = r.pr_number \nWHERE p.state = 'open' \n  AND json_extract(p.data, '$.author_association') IN ('OWNER', 'MEMBER', 'COLLABORATOR') \n  AND p.repo IN (${repo:singlequote})\nORDER BY \"Days Open\" DESC",
+          "rawQueryText": "SELECT \n  p.repo as \"Repo\", \n  p.author as \"Author\", \n  p.title as \"Title\", \n  json_extract(p.data, '$.html_url') as \"URL\",\n  COALESCE(\n    (SELECT GROUP_CONCAT(json_extract(value, '$.name'), ', ') \n     FROM json_each(json_extract(p.data, '$.labels'))), \n    ''\n  ) as \"Labels\",\n  CASE \n    WHEN r.state = 'APPROVED' THEN '✅ Approved' \n    WHEN r.state = 'CHANGES_REQUESTED' THEN '🔄 Changes Requested' \n    ELSE '👀 Needs Review' \n  END as \"Status\", \n  CAST((julianday('now') - julianday(p.created_at)) as INTEGER) as \"Days Open\",\n  CAST((julianday('now') - julianday(p.updated_at)) as INTEGER) as \"Days Since Activity\"\nFROM pull_requests p \nLEFT JOIN (\n    SELECT repo, pr_number, state FROM pr_reviews r1 \n    WHERE submitted_at = (SELECT MAX(submitted_at) FROM pr_reviews r2 WHERE r2.pr_number = r1.pr_number AND r2.repo = r1.repo)\n) r ON p.repo = r.repo AND p.number = r.pr_number \nWHERE p.state = 'open' \n  AND json_extract(p.data, '$.author_association') IN ('OWNER', 'MEMBER', 'COLLABORATOR') \n  AND p.repo IN (${repo:singlequote})\nORDER BY \"Days Open\" DESC",
           "refId": "A",
           "timeColumns": [
             "time",
@@ -195,14 +196,14 @@
         }
       ],
       "title": "Team PRs",
-      "type": "table",
-      "description": "Current open PRs. Point-in-time snapshot - not affected by date range. "
+      "type": "table"
     },
     {
       "datasource": {
         "type": "frser-sqlite-datasource",
         "uid": "P2289B60D79A89B0C"
       },
+      "description": "Current open PRs. Point-in-time snapshot - not affected by date range. ",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -369,21 +370,25 @@
       "pluginVersion": "12.3.1",
       "targets": [
         {
-          "queryText": "SELECT \n  p.repo as \"Repo\", \n  p.author as \"Author\", \n  p.title as \"Title\", \n  json_extract(p.data, '$.html_url') as \"URL\",\n  COALESCE(\n    (SELECT GROUP_CONCAT(json_extract(value, '$.name'), ', ') \n     FROM json_each(json_extract(p.data, '$.labels'))), \n    ''\n  ) as \"Labels\",\n  CASE \n    WHEN r.state = 'APPROVED' THEN '\u2705 Approved' \n    WHEN r.state = 'CHANGES_REQUESTED' THEN '\ud83d\udd04 Changes Requested' \n    ELSE '\ud83d\udc40 Needs Review' \n  END as \"Status\",\n  CASE \n    WHEN NOT EXISTS (\n      SELECT 1 FROM pull_requests p2 \n      WHERE p2.author = p.author \n        AND p2.merged_at IS NOT NULL \n        AND p2.created_at < p.created_at\n    ) THEN '\ud83c\udd95 First PR!'\n    ELSE ''\n  END as \"New Contributor\",\n  CAST((julianday('now') - julianday(p.created_at)) as INTEGER) as \"Days Open\",\n  CAST((julianday('now') - julianday(p.updated_at)) as INTEGER) as \"Days Since Activity\"\nFROM pull_requests p \nLEFT JOIN (\n    SELECT repo, pr_number, state FROM pr_reviews r1 \n    WHERE submitted_at = (SELECT MAX(submitted_at) FROM pr_reviews r2 WHERE r2.pr_number = r1.pr_number AND r2.repo = r1.repo)\n) r ON p.repo = r.repo AND p.number = r.pr_number \nWHERE p.state = 'open' \n  AND json_extract(p.data, '$.author_association') NOT IN ('OWNER', 'MEMBER', 'COLLABORATOR') \n  AND p.repo IN ('agent-builder','agent-sop','docs','evals','mcp-server','private-docs-staging','private-sdk-python-staging','private-sdk-typescript-staging','private-tools-staging','samples','sdk-python','sdk-typescript','strands-action','strandsagents.com','tools','.github','private-samples-staging','private-strands-action-staging')\nORDER BY \"Days Open\" DESC",
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "P2289B60D79A89B0C"
+          },
+          "queryText": "SELECT \n  p.repo as \"Repo\", \n  p.author as \"Author\", \n  p.title as \"Title\", \n  json_extract(p.data, '$.html_url') as \"URL\",\n  COALESCE(\n    (SELECT GROUP_CONCAT(json_extract(value, '$.name'), ', ') \n     FROM json_each(json_extract(p.data, '$.labels'))), \n    ''\n  ) as \"Labels\",\n  CASE \n    WHEN r.state = 'APPROVED' THEN '✅ Approved' \n    WHEN r.state = 'CHANGES_REQUESTED' THEN '🔄 Changes Requested' \n    ELSE '👀 Needs Review' \n  END as \"Status\",\n  CASE \n    WHEN NOT EXISTS (\n      SELECT 1 FROM pull_requests p2 \n      WHERE p2.author = p.author \n        AND p2.merged_at IS NOT NULL \n        AND p2.created_at < p.created_at\n    ) THEN '🆕 First PR!'\n    ELSE ''\n  END as \"New Contributor\",\n  CAST((julianday('now') - julianday(p.created_at)) as INTEGER) as \"Days Open\",\n  CAST((julianday('now') - julianday(p.updated_at)) as INTEGER) as \"Days Since Activity\"\nFROM pull_requests p \nLEFT JOIN (\n    SELECT repo, pr_number, state FROM pr_reviews r1 \n    WHERE submitted_at = (SELECT MAX(submitted_at) FROM pr_reviews r2 WHERE r2.pr_number = r1.pr_number AND r2.repo = r1.repo)\n) r ON p.repo = r.repo AND p.number = r.pr_number \nWHERE p.state = 'open' \n  AND json_extract(p.data, '$.author_association') NOT IN ('OWNER', 'MEMBER', 'COLLABORATOR') \n  AND p.repo IN ('agent-builder','agent-sop','docs','evals','mcp-server','private-docs-staging','private-sdk-python-staging','private-sdk-typescript-staging','private-tools-staging','samples','sdk-python','sdk-typescript','strands-action','strandsagents.com','tools','.github','private-samples-staging','private-strands-action-staging')\nORDER BY \"Days Open\" DESC",
           "queryType": "table",
-          "rawQueryText": "SELECT \n  p.repo as \"Repo\", \n  p.author as \"Author\", \n  p.title as \"Title\", \n  json_extract(p.data, '$.html_url') as \"URL\",\n  COALESCE(\n    (SELECT GROUP_CONCAT(json_extract(value, '$.name'), ', ') \n     FROM json_each(json_extract(p.data, '$.labels'))), \n    ''\n  ) as \"Labels\",\n  CASE \n    WHEN r.state = 'APPROVED' THEN '\u2705 Approved' \n    WHEN r.state = 'CHANGES_REQUESTED' THEN '\ud83d\udd04 Changes Requested' \n    ELSE '\ud83d\udc40 Needs Review' \n  END as \"Status\",\n  CASE \n    WHEN NOT EXISTS (\n      SELECT 1 FROM pull_requests p2 \n      WHERE p2.author = p.author \n        AND p2.merged_at IS NOT NULL \n        AND p2.created_at < p.created_at\n    ) THEN '\ud83c\udd95 First PR!'\n    ELSE ''\n  END as \"New Contributor\",\n  CAST((julianday('now') - julianday(p.created_at)) as INTEGER) as \"Days Open\",\n  CAST((julianday('now') - julianday(p.updated_at)) as INTEGER) as \"Days Since Activity\"\nFROM pull_requests p \nLEFT JOIN (\n    SELECT repo, pr_number, state FROM pr_reviews r1 \n    WHERE submitted_at = (SELECT MAX(submitted_at) FROM pr_reviews r2 WHERE r2.pr_number = r1.pr_number AND r2.repo = r1.repo)\n) r ON p.repo = r.repo AND p.number = r.pr_number \nWHERE p.state = 'open' \n  AND json_extract(p.data, '$.author_association') NOT IN ('OWNER', 'MEMBER', 'COLLABORATOR') \n  AND p.repo IN (${repo:singlequote})\nORDER BY \"Days Open\" DESC",
+          "rawQueryText": "SELECT \n  p.repo as \"Repo\", \n  p.author as \"Author\", \n  p.title as \"Title\", \n  json_extract(p.data, '$.html_url') as \"URL\",\n  COALESCE(\n    (SELECT GROUP_CONCAT(json_extract(value, '$.name'), ', ') \n     FROM json_each(json_extract(p.data, '$.labels'))), \n    ''\n  ) as \"Labels\",\n  CASE \n    WHEN r.state = 'APPROVED' THEN '✅ Approved' \n    WHEN r.state = 'CHANGES_REQUESTED' THEN '🔄 Changes Requested' \n    ELSE '👀 Needs Review' \n  END as \"Status\",\n  CASE \n    WHEN NOT EXISTS (\n      SELECT 1 FROM pull_requests p2 \n      WHERE p2.author = p.author \n        AND p2.merged_at IS NOT NULL \n        AND p2.created_at < p.created_at\n    ) THEN '🆕 First PR!'\n    ELSE ''\n  END as \"New Contributor\",\n  CAST((julianday('now') - julianday(p.created_at)) as INTEGER) as \"Days Open\",\n  CAST((julianday('now') - julianday(p.updated_at)) as INTEGER) as \"Days Since Activity\"\nFROM pull_requests p \nLEFT JOIN (\n    SELECT repo, pr_number, state FROM pr_reviews r1 \n    WHERE submitted_at = (SELECT MAX(submitted_at) FROM pr_reviews r2 WHERE r2.pr_number = r1.pr_number AND r2.repo = r1.repo)\n) r ON p.repo = r.repo AND p.number = r.pr_number \nWHERE p.state = 'open' \n  AND json_extract(p.data, '$.author_association') NOT IN ('OWNER', 'MEMBER', 'COLLABORATOR') \n  AND p.repo IN (${repo:singlequote})\nORDER BY \"Days Open\" DESC",
           "refId": "A"
         }
       ],
       "title": "Community PRs",
-      "type": "table",
-      "description": "Current open PRs. Point-in-time snapshot - not affected by date range. "
+      "type": "table"
     },
     {
       "datasource": {
         "type": "frser-sqlite-datasource",
         "uid": "P2289B60D79A89B0C"
       },
+      "description": "Current open issues without a milestone. Point-in-time snapshot - not affected by date range.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -517,14 +522,14 @@
         }
       ],
       "title": "Untriaged Issues (No Milestone)",
-      "type": "table",
-      "description": "Current open issues without a milestone. Point-in-time snapshot - not affected by date range."
+      "type": "table"
     },
     {
       "datasource": {
         "type": "frser-sqlite-datasource",
         "uid": "P2289B60D79A89B0C"
       },
+      "description": "Current open issues sorted by upvotes. Point-in-time snapshot - not affected by date range.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -638,14 +643,14 @@
         }
       ],
       "title": "Top Upvoted Issues",
-      "type": "table",
-      "description": "Current open issues sorted by upvotes. Point-in-time snapshot - not affected by date range."
+      "type": "table"
     },
     {
       "datasource": {
         "type": "frser-sqlite-datasource",
         "uid": "P2289B60D79A89B0C"
       },
+      "description": "Current open issues sorted by comment count. Point-in-time snapshot - not affected by date range.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -755,8 +760,7 @@
         }
       ],
       "title": "Most Discussed Issues",
-      "type": "table",
-      "description": "Current open issues sorted by comment count. Point-in-time snapshot - not affected by date range."
+      "type": "table"
     },
     {
       "datasource": {
@@ -784,8 +788,16 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "orange",
-                "value": 0
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 4.95
+              },
+              {
+                "color": "red",
+                "value": 15.0
               }
             ]
           }
@@ -902,7 +914,7 @@
           "refId": "A"
         }
       ],
-      "title": "\u26a0\ufe0f Stale PRs (7d+ No Activity)",
+      "title": "⚠️ Stale PRs (7d+ No Activity)",
       "type": "table"
     },
     {
@@ -1036,13 +1048,13 @@
       },
       "targets": [
         {
-          "queryText": "SELECT \n  p.repo as \"Repo\",\n  p.author as \"Author\",\n  p.title as \"Title\",\n  json_extract(p.data, '$.html_url') as \"URL\",\n  CASE \n    WHEN r.state = 'APPROVED' THEN '\u2705 Approved' \n    WHEN r.state = 'CHANGES_REQUESTED' THEN '\ud83d\udd04 Changes Requested' \n    ELSE '\ud83d\udc40 Needs Review' \n  END as \"Status\",\n  CAST((julianday('now') - julianday(p.created_at)) as INTEGER) as \"Days Open\"\nFROM pull_requests p\nLEFT JOIN (\n    SELECT repo, pr_number, state FROM pr_reviews r1 \n    WHERE submitted_at = (SELECT MAX(submitted_at) FROM pr_reviews r2 WHERE r2.pr_number = r1.pr_number AND r2.repo = r1.repo)\n) r ON p.repo = r.repo AND p.number = r.pr_number\nWHERE p.state = 'open'\n  AND json_extract(p.data, '$.author_association') NOT IN ('OWNER', 'MEMBER', 'COLLABORATOR')\n  AND NOT EXISTS (\n    SELECT 1 FROM pull_requests p2 \n    WHERE p2.author = p.author \n      AND p2.merged_at IS NOT NULL \n      AND p2.created_at < p.created_at\n  )\n  AND p.repo IN ('agent-builder','agent-sop','docs','evals','mcp-server','private-docs-staging','private-sdk-python-staging','private-sdk-typescript-staging','private-tools-staging','samples','sdk-python','sdk-typescript','strands-action','strandsagents.com','tools','.github','private-samples-staging','private-strands-action-staging')\nORDER BY \"Days Open\" DESC",
+          "queryText": "SELECT \n  p.repo as \"Repo\",\n  p.author as \"Author\",\n  p.title as \"Title\",\n  json_extract(p.data, '$.html_url') as \"URL\",\n  CASE \n    WHEN r.state = 'APPROVED' THEN '✅ Approved' \n    WHEN r.state = 'CHANGES_REQUESTED' THEN '🔄 Changes Requested' \n    ELSE '👀 Needs Review' \n  END as \"Status\",\n  CAST((julianday('now') - julianday(p.created_at)) as INTEGER) as \"Days Open\"\nFROM pull_requests p\nLEFT JOIN (\n    SELECT repo, pr_number, state FROM pr_reviews r1 \n    WHERE submitted_at = (SELECT MAX(submitted_at) FROM pr_reviews r2 WHERE r2.pr_number = r1.pr_number AND r2.repo = r1.repo)\n) r ON p.repo = r.repo AND p.number = r.pr_number\nWHERE p.state = 'open'\n  AND json_extract(p.data, '$.author_association') NOT IN ('OWNER', 'MEMBER', 'COLLABORATOR')\n  AND NOT EXISTS (\n    SELECT 1 FROM pull_requests p2 \n    WHERE p2.author = p.author \n      AND p2.merged_at IS NOT NULL \n      AND p2.created_at < p.created_at\n  )\n  AND p.repo IN ('agent-builder','agent-sop','docs','evals','mcp-server','private-docs-staging','private-sdk-python-staging','private-sdk-typescript-staging','private-tools-staging','samples','sdk-python','sdk-typescript','strands-action','strandsagents.com','tools','.github','private-samples-staging','private-strands-action-staging')\nORDER BY \"Days Open\" DESC",
           "queryType": "table",
-          "rawQueryText": "SELECT \n  p.repo as \"Repo\",\n  p.author as \"Author\",\n  p.title as \"Title\",\n  json_extract(p.data, '$.html_url') as \"URL\",\n  CASE \n    WHEN r.state = 'APPROVED' THEN '\u2705 Approved' \n    WHEN r.state = 'CHANGES_REQUESTED' THEN '\ud83d\udd04 Changes Requested' \n    ELSE '\ud83d\udc40 Needs Review' \n  END as \"Status\",\n  CAST((julianday('now') - julianday(p.created_at)) as INTEGER) as \"Days Open\"\nFROM pull_requests p\nLEFT JOIN (\n    SELECT repo, pr_number, state FROM pr_reviews r1 \n    WHERE submitted_at = (SELECT MAX(submitted_at) FROM pr_reviews r2 WHERE r2.pr_number = r1.pr_number AND r2.repo = r1.repo)\n) r ON p.repo = r.repo AND p.number = r.pr_number\nWHERE p.state = 'open'\n  AND json_extract(p.data, '$.author_association') NOT IN ('OWNER', 'MEMBER', 'COLLABORATOR')\n  AND NOT EXISTS (\n    SELECT 1 FROM pull_requests p2 \n    WHERE p2.author = p.author \n      AND p2.merged_at IS NOT NULL \n      AND p2.created_at < p.created_at\n  )\n  AND p.repo IN (${repo:singlequote})\nORDER BY \"Days Open\" DESC",
+          "rawQueryText": "SELECT \n  p.repo as \"Repo\",\n  p.author as \"Author\",\n  p.title as \"Title\",\n  json_extract(p.data, '$.html_url') as \"URL\",\n  CASE \n    WHEN r.state = 'APPROVED' THEN '✅ Approved' \n    WHEN r.state = 'CHANGES_REQUESTED' THEN '🔄 Changes Requested' \n    ELSE '👀 Needs Review' \n  END as \"Status\",\n  CAST((julianday('now') - julianday(p.created_at)) as INTEGER) as \"Days Open\"\nFROM pull_requests p\nLEFT JOIN (\n    SELECT repo, pr_number, state FROM pr_reviews r1 \n    WHERE submitted_at = (SELECT MAX(submitted_at) FROM pr_reviews r2 WHERE r2.pr_number = r1.pr_number AND r2.repo = r1.repo)\n) r ON p.repo = r.repo AND p.number = r.pr_number\nWHERE p.state = 'open'\n  AND json_extract(p.data, '$.author_association') NOT IN ('OWNER', 'MEMBER', 'COLLABORATOR')\n  AND NOT EXISTS (\n    SELECT 1 FROM pull_requests p2 \n    WHERE p2.author = p.author \n      AND p2.merged_at IS NOT NULL \n      AND p2.created_at < p.created_at\n  )\n  AND p.repo IN (${repo:singlequote})\nORDER BY \"Days Open\" DESC",
           "refId": "A"
         }
       ],
-      "title": "\ud83c\udf1f First-Time Contributors (Needs Welcome!)",
+      "title": "🌟 First-Time Contributors (Needs Welcome!)",
       "type": "table"
     },
     {
@@ -1158,7 +1170,7 @@
           "refId": "A"
         }
       ],
-      "title": "\ud83e\udd16 Dependabot PRs",
+      "title": "🤖 Dependabot PRs",
       "type": "table"
     }
   ],

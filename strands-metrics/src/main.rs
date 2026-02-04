@@ -8,6 +8,7 @@ use anyhow::Result;
 use clap::{Parser, Subcommand};
 use client::GitHubClient;
 use db::init_db;
+use goals::Direction;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use octocrab::OctocrabBuilder;
 use std::path::PathBuf;
@@ -41,6 +42,12 @@ enum Commands {
     },
     /// List all configured goals.
     ListGoals,
+    /// Load team members into the database for dashboard queries.
+    LoadTeam {
+        /// Comma-separated list of GitHub usernames
+        #[clap(long, value_delimiter = ',')]
+        members: Vec<String>,
+    },
     /// Sync package download stats from PyPI and npm.
     SyncDownloads {
         /// Path to packages.yaml config file
@@ -56,6 +63,18 @@ enum Commands {
         #[clap(long, default_value = "strands-grafana/packages.yaml")]
         config_path: PathBuf,
     },
+}
+
+/// Create a spinner progress bar with consistent styling
+fn create_spinner(m: &Arc<MultiProgress>, message: &str) -> ProgressBar {
+    let sty = ProgressStyle::with_template("{spinner:.green} {msg}")
+        .unwrap()
+        .tick_chars("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏ ");
+    let pb = m.add(ProgressBar::new_spinner());
+    pb.set_style(sty);
+    pb.enable_steady_tick(std::time::Duration::from_millis(120));
+    pb.set_message(message.to_string());
+    pb
 }
 
 #[tokio::main]
@@ -75,14 +94,7 @@ async fn main() -> Result<()> {
             let octocrab = OctocrabBuilder::new().personal_token(gh_token).build()?;
 
             let m = Arc::new(MultiProgress::new());
-            let sty = ProgressStyle::with_template("{spinner:.green} {msg}")
-                .unwrap()
-                .tick_chars("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏ ");
-
-            let pb = m.add(ProgressBar::new_spinner());
-            pb.set_style(sty.clone());
-            pb.enable_steady_tick(std::time::Duration::from_millis(120));
-            pb.set_message("Initializing Sync...");
+            let pb = create_spinner(&m, "Initializing Sync...");
 
             let mut client = GitHubClient::new(octocrab, &mut conn, pb.clone());
 
@@ -98,14 +110,7 @@ async fn main() -> Result<()> {
             let octocrab = OctocrabBuilder::new().personal_token(gh_token).build()?;
 
             let m = Arc::new(MultiProgress::new());
-            let sty = ProgressStyle::with_template("{spinner:.green} {msg}")
-                .unwrap()
-                .tick_chars("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏ ");
-
-            let pb = m.add(ProgressBar::new_spinner());
-            pb.set_style(sty);
-            pb.enable_steady_tick(std::time::Duration::from_millis(120));
-            pb.set_message("Starting Sweep...");
+            let pb = create_spinner(&m, "Starting Sweep...");
 
             let mut client = GitHubClient::new(octocrab, &mut conn, pb.clone());
             client.sweep_org(ORG).await?;
@@ -145,12 +150,32 @@ async fn main() -> Result<()> {
         }
         Commands::ListGoals => {
             let all_goals = goals::list_goals(&conn)?;
-            println!("{:<40} | {:>10} | {}", "Metric", "Value", "Label");
-            println!("{}", "-".repeat(75));
-            for (metric, value, label) in all_goals {
-                let label_str = label.unwrap_or_else(|| "-".to_string());
-                println!("{:<40} | {:>10} | {}", metric, value, label_str);
+            println!(
+                "{:<40} | {:>10} | {:<20} | {:<15} | {}",
+                "Metric", "Value", "Label", "Direction", "Warning Ratio"
+            );
+            println!("{}", "-".repeat(110));
+            for goal in all_goals {
+                let label_str = goal.label.as_deref().unwrap_or("-");
+                let dir_str = match goal.direction {
+                    Direction::LowerIsBetter => "lower_is_better",
+                    Direction::HigherIsBetter => "higher_is_better",
+                };
+                let ratio_str = goal
+                    .warning_ratio
+                    .map(|r| format!("{:.2}", r))
+                    .unwrap_or_else(|| "-".to_string());
+                println!(
+                    "{:<40} | {:>10} | {:<20} | {:<15} | {}",
+                    goal.metric, goal.value, label_str, dir_str, ratio_str
+                );
             }
+        }
+        Commands::LoadTeam { members } => {
+            let member_tuples: Vec<(&str, Option<&str>)> =
+                members.iter().map(|m| (m.as_str(), None)).collect();
+            let count = goals::load_team_members(&conn, &member_tuples)?;
+            println!("Loaded {} team members", count);
         }
         Commands::SyncDownloads { config_path, days } => {
             let config = downloads::load_packages_config(config_path.to_str().unwrap())?;
